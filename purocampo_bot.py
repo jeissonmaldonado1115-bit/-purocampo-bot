@@ -8,7 +8,7 @@ filters, ContextTypes, ConversationHandler
 
 # ── CONFIG ──────────────────────────────────────────────
 
-TOKEN        = os.getenv(“BOT_TOKEN”, “8752257990:AAHW9_yIPgRGziEh-5UMTpM0T4GHAuUH7dI”)
+TOKEN        = os.getenv("BOT_TOKEN")
 ADMIN_CHAT_ID = os.getenv(“ADMIN_CHAT_ID”, “”)  # Tu chat_id de Telegram para recibir pedidos
 
 logging.basicConfig(level=logging.INFO)
