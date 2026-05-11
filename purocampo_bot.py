@@ -220,41 +220,20 @@ async def chat_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if ctx.user_data.get("producto_activo"):
         return await esperando_cantidad(update, ctx)
 
-    # Número de producto
+    # Número de producto — solo acepta número solo sin texto adicional
     import re
-    match = re.match(r'^(\d{1,2})\s*(\d+(?:[.,]\d+)?)?', t)
+    match = re.match(r'^(\d{1,2})$', t.strip())
     if match:
         num  = int(match.group(1))
         prod = next((p for p in MENU if p["num"] == num), None)
         if prod:
-            cantidad_str = match.group(2)
-            if cantidad_str:
-                cantidad = float(cantidad_str.replace(",", "."))
-                subtotal = prod["precio"] * cantidad
-                carrito  = get_carrito(ctx)
-                idx = next((i for i, x in enumerate(carrito) if x["num"] == num), -1)
-                if idx >= 0:
-                    carrito[idx]["cantidad"] += cantidad
-                    carrito[idx]["subtotal"] += subtotal
-                else:
-                    carrito.append({**prod, "cantidad": cantidad, "subtotal": subtotal})
-                ctx.user_data["carrito"] = carrito
-                u = "cubeta(s)" if prod["unidad"] == "cubeta" else "kg"
-                await update.message.reply_text(
-                    f"✅ *{cantidad} {u} de {prod['nombre']}* — {fmt_price(subtotal)}\n\n"
-                    f"👉 Escribe otro número para seguir\n"
-                    f"✅ O toca *Finalizar pedido* para pagar",
-                    parse_mode="Markdown",
-                    reply_markup=teclado_principal()
-                )
-            else:
-                ctx.user_data["producto_activo"] = prod
-                u = "cubetas" if prod["unidad"] == "cubeta" else "kilos"
-                await update.message.reply_text(
-                    f"*{prod['nombre']}*\n{fmt_price(prod['precio'])} por {prod['unidad']}\n\n¿Cuántos {u} desea?",
-                    parse_mode="Markdown"
-                )
-                return ESPERANDO_CANTIDAD
+            ctx.user_data["producto_activo"] = prod
+            u = "cubetas" if prod["unidad"] == "cubeta" else "kilos"
+            await update.message.reply_text(
+                f"*{prod['nombre']}*\n{fmt_price(prod['precio'])} por {prod['unidad']}\n\n¿Cuántos {u} desea?",
+                parse_mode="Markdown"
+            )
+            return ESPERANDO_CANTIDAD
         else:
             await update.message.reply_text(
                 f"No existe el producto *{num}*.\nEscriba *menu* para ver los números disponibles.",
