@@ -7,12 +7,14 @@ from telegram.ext import (
 )
 
 # ── CONFIG ──────────────────────────────────────────────
-TOKEN        = os.getenv("BOT_TOKEN")
+
+TOKEN         = os.getenv("BOT_TOKEN")
 ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID", "")
 
 logging.basicConfig(level=logging.INFO)
 
 # ── MENÚ ────────────────────────────────────────────────
+
 MENU = [
     # Cortes Premium
     {"num": 1,  "nombre": "Solomito de Cerdo",  "precio": 24900, "unidad": "kg",     "seccion": "CORTES PREMIUM"},
@@ -53,9 +55,11 @@ MENU = [
 SECCIONES = ["CORTES PREMIUM", "CORTES", "VÍSCERAS", "HUEVOS", "LÁCTEOS"]
 
 # ── ESTADOS ─────────────────────────────────────────────
+
 CHAT, ESPERANDO_CANTIDAD, DIRECCION, NOMBRE, TELEFONO, CONFIRMACION = range(6)
 
 # ── HELPERS ─────────────────────────────────────────────
+
 def fmt_price(n):
     return f"${n:,.0f}".replace(",", ".")
 
@@ -105,6 +109,7 @@ def resumen_carrito(ctx):
     return "\n".join(lines)
 
 # ── NOTIFICACIÓN AL ADMIN ────────────────────────────────
+
 async def notificar_admin(context, datos):
     if not ADMIN_CHAT_ID:
         return
@@ -126,6 +131,7 @@ async def notificar_admin(context, datos):
     )
 
 # ── HANDLERS ────────────────────────────────────────────
+
 async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     ctx.user_data.clear()
     ctx.user_data["carrito"] = []
@@ -140,7 +146,7 @@ async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     return CHAT
 
 async def chat_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    t = update.message.text.strip()
+    t  = update.message.text.strip()
     tl = t.lower()
 
     # Ver menú
@@ -210,18 +216,22 @@ async def chat_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         )
         return DIRECCION
 
+    # ── FIX: si hay producto activo, redirigir a esperando_cantidad ──
+    if ctx.user_data.get("producto_activo"):
+        return await esperando_cantidad(update, ctx)
+
     # Número de producto
     import re
     match = re.match(r'^(\d{1,2})\s*(\d+(?:[.,]\d+)?)?', t)
     if match:
-        num = int(match.group(1))
+        num  = int(match.group(1))
         prod = next((p for p in MENU if p["num"] == num), None)
         if prod:
             cantidad_str = match.group(2)
             if cantidad_str:
                 cantidad = float(cantidad_str.replace(",", "."))
                 subtotal = prod["precio"] * cantidad
-                carrito = get_carrito(ctx)
+                carrito  = get_carrito(ctx)
                 idx = next((i for i, x in enumerate(carrito) if x["num"] == num), -1)
                 if idx >= 0:
                     carrito[idx]["cantidad"] += cantidad
@@ -261,16 +271,16 @@ async def chat_handler(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 async def esperando_cantidad(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     import re
-    t = update.message.text.strip()
+    t     = update.message.text.strip()
     match = re.search(r'(\d+(?:[.,]\d+)?)', t)
     if not match:
         await update.message.reply_text("Por favor escribe solo la cantidad. Ej: *2* o *1.5*", parse_mode="Markdown")
         return ESPERANDO_CANTIDAD
 
     cantidad = float(match.group(1).replace(",", "."))
-    prod = ctx.user_data.get("producto_activo")
+    prod     = ctx.user_data.get("producto_activo")
     subtotal = prod["precio"] * cantidad
-    carrito = get_carrito(ctx)
+    carrito  = get_carrito(ctx)
     idx = next((i for i, x in enumerate(carrito) if x["num"] == prod["num"]), -1)
     if idx >= 0:
         carrito[idx]["cantidad"] += cantidad
@@ -302,8 +312,8 @@ async def pedir_nombre(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
 async def pedir_telefono(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     import random
-    ctx.user_data["telefono"] = update.message.text.strip()
-    numero_pedido = f"PC-{random.randint(10000,99999)}"
+    ctx.user_data["telefono"]      = update.message.text.strip()
+    numero_pedido                  = f"PC-{random.randint(10000,99999)}"
     ctx.user_data["numero_pedido"] = numero_pedido
 
     carrito   = get_carrito(ctx)
@@ -350,7 +360,7 @@ async def confirmar(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             f"🎉 *¡Pedido confirmado!*\n\n"
             f"En breve le contactamos al *{datos['telefono']}* para coordinar la entrega.\n\n"
             f"¡Gracias, {nombre}! 🐷\n\n"
-            f"_Puro Campo · Del campo a tu mesa_",
+            f"*Puro Campo · Del campo a tu mesa*",
             parse_mode="Markdown",
             reply_markup=teclado_principal()
         )
@@ -371,18 +381,19 @@ async def cancelar(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     return CHAT
 
 # ── MAIN ────────────────────────────────────────────────
+
 def main():
     app = Application.builder().token(TOKEN).build()
 
     conv = ConversationHandler(
         entry_points=[CommandHandler("start", start), MessageHandler(filters.TEXT & ~filters.COMMAND, chat_handler)],
         states={
-            CHAT:              [MessageHandler(filters.TEXT & ~filters.COMMAND, chat_handler)],
-            ESPERANDO_CANTIDAD:[MessageHandler(filters.TEXT & ~filters.COMMAND, esperando_cantidad)],
-            DIRECCION:         [MessageHandler(filters.TEXT & ~filters.COMMAND, pedir_direccion)],
-            NOMBRE:            [MessageHandler(filters.TEXT & ~filters.COMMAND, pedir_nombre)],
-            TELEFONO:          [MessageHandler(filters.TEXT & ~filters.COMMAND, pedir_telefono)],
-            CONFIRMACION:      [MessageHandler(filters.TEXT & ~filters.COMMAND, confirmar)],
+            CHAT:               [MessageHandler(filters.TEXT & ~filters.COMMAND, chat_handler)],
+            ESPERANDO_CANTIDAD: [MessageHandler(filters.TEXT & ~filters.COMMAND, esperando_cantidad)],
+            DIRECCION:          [MessageHandler(filters.TEXT & ~filters.COMMAND, pedir_direccion)],
+            NOMBRE:             [MessageHandler(filters.TEXT & ~filters.COMMAND, pedir_nombre)],
+            TELEFONO:           [MessageHandler(filters.TEXT & ~filters.COMMAND, pedir_telefono)],
+            CONFIRMACION:       [MessageHandler(filters.TEXT & ~filters.COMMAND, confirmar)],
         },
         fallbacks=[CommandHandler("cancelar", cancelar)],
         allow_reentry=True,
