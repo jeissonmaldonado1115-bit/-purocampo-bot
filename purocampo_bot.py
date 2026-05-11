@@ -375,7 +375,7 @@ def main():
             CONFIRMACION:       [MessageHandler(filters.TEXT & ~filters.COMMAND, confirmar)],
         },
         fallbacks=[CommandHandler("cancelar", cancelar)],
-        allow_reentry=True,
+        allow_reentry=false,
     )
 
     app.add_handler(conv)
